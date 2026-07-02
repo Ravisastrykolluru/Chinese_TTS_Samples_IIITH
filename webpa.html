@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese TTS Exploration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f7f8fc;
+            color: #1a1a2e;
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e0e4ea;
+            padding-bottom: 12px;
+        }
+
+        /* Sentence card */
+        .sentence-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #5b7fbf;
+        }
+
+        .sentence-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #5b7fbf;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .sentence-hanzi {
+            font-size: 22px;
+            font-weight: 500;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .sentence-pinyin {
+            font-size: 16px;
+            color: #777;
+            font-style: italic;
+        }
+
+        /* Navigation */
+        .nav-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 6px 20px;
+            background: #e8ebf0;
+            border: 1px solid #d0d4dd;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #1a1a2e;
+        }
+
+        .nav-btn:hover {
+            background: #d5dae3;
+        }
+
+        .nav-counter {
+            padding: 6px 14px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #d0d4dd;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* Model section */
+        .section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: 2px solid #d0d4dd;
+            background: white;
+            color: #333;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            border-color: #8aa3d0;
+            background: #f0f3f9;
+        }
+
+        .btn.active {
+            border-color: #5b7fbf;
+            background: #5b7fbf;
+            color: white;
+        }
+
+        /* Speaker section */
+        .speaker-box {
+            padding: 14px 18px;
+            background: #f0f2f7;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .speaker-box.visible {
+            display: block;
+        }
+
+        .speaker-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .speaker-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .speaker-btn {
+            padding: 5px 14px;
+            border: 1.5px solid #c5c9d4;
+            background: white;
+            color: #333;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .speaker-btn:hover {
+            border-color: #8aa3d0;
+            background: #eef2f9;
+        }
+
+        .speaker-btn.active {
+            border-color: #5b7fbf;
+            background: #5b7fbf;
+            color: white;
+        }
+
+        /* Audio area */
+        .audio-box {
+            background: white;
+            border-radius: 12px;
+            padding: 18px 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: 4px;
+            display: none;
+        }
+
+        .audio-box.visible {
+            display: block;
+        }
+
+        .audio-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .audio-meta {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .audio-fname {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a1a2e;
+        }
+
+        .audio-path {
+            font-size: 12px;
+            color: #999;
+            word-break: break-all;
+        }
+
+        .audio-player-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .audio-player-wrap audio {
+            max-width: 260px;
+            height: 40px;
+        }
+
+        .download-btn {
+            padding: 6px 16px;
+            background: #5b7fbf;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.15s;
+        }
+
+        .download-btn:hover {
+            background: #4a6aa3;
+        }
+
+        .status {
+            padding: 10px 16px;
+            background: #f5f0e6;
+            border-radius: 8px;
+            color: #7a6a4a;
+            font-size: 13px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .status.visible {
+            display: block;
+        }
+
+        .footer {
+            margin-top: 32px;
+            padding-top: 14px;
+            border-top: 1px solid #e0e4ea;
+            font-size: 13px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 14px; }
+            .sentence-hanzi { font-size: 18px; }
+            .audio-player-wrap audio { max-width: 160px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎵 Chinese TTS Exploration</h1>
+    <p class="subtitle">Compare voices across models · Hanzi + Pinyin</p>
+
+    <!-- Sentence Card -->
+    <div class="sentence-card">
+        <div class="sentence-label" id="sentenceLabel">Sentence 1 / 10</div>
+        <div class="sentence-hanzi" id="sentenceHanzi">敌军步兵正以楔形队形向45号界碑推进。</div>
+        <div class="sentence-pinyin" id="sentencePinyin">Díjūn bùbīng zhèng yǐ xiēxíng duìxíng xiàng sìshíwǔ hào jièbēi tuījìn.</div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-row">
+        <button class="nav-btn" onclick="prevSentence()">← Prev</button>
+        <span class="nav-counter" id="sentenceCounter">1 / 10</span>
+        <button class="nav-btn" onclick="nextSentence()">Next →</button>
+    </div>
+
+    <!-- Model Selection -->
+    <span class="section-label">Model</span>
+    <div class="btn-group" id="modelGroup">
+        <button class="btn" data-model="vits" onclick="selectModel('vits')">VITS</button>
+        <button class="btn" data-model="qwen" onclick="selectModel('qwen')">Qwen3-TTS</button>
+        <button class="btn" data-model="indextts" onclick="selectModel('indextts')">IndexTTS-2</button>
+        <button class="btn" data-model="melotts" onclick="selectModel('melotts')">MeloTTS</button>
+    </div>
+
+    <!-- Speaker Selection -->
+    <div class="speaker-box" id="speakerBox">
+        <span class="speaker-label">Speaker</span>
+        <div class="speaker-btns" id="speakerButtons"></div>
+    </div>
+
+    <!-- Audio Player -->
+    <div class="audio-box" id="audioBox">
+        <div class="audio-row">
+            <div class="audio-meta">
+                <div class="audio-fname" id="audioFname">sentence_01.wav</div>
+                <div class="audio-path" id="audioPath">/path/to/audio/</div>
+            </div>
+            <div class="audio-player-wrap">
+                <audio controls id="audioPlayer"></audio>
+                <a href="#" class="download-btn" id="downloadBtn" download>⬇ Download</a>
+            </div>
+        </div>
+        <div class="status" id="statusMsg">Select a model and speaker to load audio.</div>
+    </div>
+
+    <div class="footer">Simple exploration · all audio generated locally</div>
+
+    <script>
+        // --------------------------------------------------------------
+        // DATA
+        // --------------------------------------------------------------
+        const sentences = [
+            { hanzi: "敌军步兵正以楔形队形向45号界碑推进。", pinyin: "Díjūn bùbīng zhèng yǐ xiēxíng duìxíng xiàng sìshíwǔ hào jièbēi tuījìn." },
+            { hanzi: "侦察兵在河谷附近发现两辆伪装的步兵战车。", pinyin: "Zhēnchábīng zài hégǔ fùjìn fāxiàn liǎng liàng wěizhuāng de bùbīng zhànchē." },
+            { hanzi: "卫星图像显示敌军正在山脊后方部署榴弹炮连。", pinyin: "Wèixīng túxiàng xiǎnshì díjūn zhèngzài shānjǐ hòufāng bùshǔ liúdànpào lián." },
+            { hanzi: "夜间巡逻队通过手持热成像仪观察到了可疑活动。", pinyin: "Yèjiān xúnluóduì tōngguò shǒuchí rè chéngxiàng yí guānchá dàole kěyí huódòng." },
+            { hanzi: "指挥官已下令快速反应分队立即前往事发地点。", pinyin: "Zhǐhuīguān yǐ xiàlìng kuàisù fǎnyìng fēnduì lìjí qiánwǎng shìfā dìdiǎn." },
+            { hanzi: "敌军小分队试图在夜幕掩护下进行渗透。", pinyin: "Díjūn xiǎofēnduì shìtú zài yèmù yǎnhù xià jìnxíng shèntòu." },
+            { hanzi: "呼叫医疗后送直升机，我们有一名重伤员需要紧急撤离。", pinyin: "Hūjiào yīliáo hòusòng zhíshēngjī, wǒmen yǒu yī míng zhòngshāngyuán xūyào jǐnjí chèlí." },
+            { hanzi: "所有哨兵必须全天候穿戴防弹衣和头盔。", pinyin: "Suǒyǒu shàobīng bìxū quántiānhòu chuāndài fángdànyī hé tóukuī." },
+            { hanzi: "巡逻队报告边界的刺铁丝网有三处被破坏。", pinyin: "Xúnluóduì bàogào biānjiè de cìtiěsīwǎng yǒu sān chù bèi pòhuài." },
+            { hanzi: "这个新的瞭望塔提供了360度的边境视野。", pinyin: "Zhège xīn de liàowàng tǎ tígōngle sānbǎi liùshí dù de biānjìng shìyě." }
+        ];
+
+        const modelConfig = {
+            vits: {
+                label: 'VITS',
+                basePath: 'output_military_top10',
+                speakers: ['speaker_43_male', 'speaker_27_male', 'speaker_25_male', 'speaker_15_male', 'speaker_13_male', 'speaker_09_male']
+            },
+            qwen: {
+                label: 'Qwen3-TTS',
+                basePath: 'qwen_male_speakers_10',
+                speakers: ['Uncle_fu', 'Aiden', 'Ryan', 'Eric', 'Dylan', 'Serena', 'Vivian', 'Sohee', 'Ono_anna', 'longcheng_v2']
+            },
+            indextts: {
+                label: 'IndexTTS-2',
+                basePath: 'indextts_output',
+                speakers: ['cloned_male']
+            },
+            melotts: {
+                label: 'MeloTTS',
+                basePath: 'melotts_output',
+                speakers: ['ZH_male']
+            }
+        };
+
+        // --------------------------------------------------------------
+        // STATE
+        // --------------------------------------------------------------
+        let idx = 0;
+        let model = null;
+        let speaker = null;
+
+        // --------------------------------------------------------------
+        // DOM
+        // --------------------------------------------------------------
+        const $ = id => document.getElementById(id);
+        const sentenceLabel = $('sentenceLabel');
+        const sentenceHanzi = $('sentenceHanzi');
+        const sentencePinyin = $('sentencePinyin');
+        const sentenceCounter = $('sentenceCounter');
+        const speakerBox = $('speakerBox');
+        const speakerButtons = $('speakerButtons');
+        const audioBox = $('audioBox');
+        const audioPlayer = $('audioPlayer');
+        const audioFname = $('audioFname');
+        const audioPath = $('audioPath');
+        const downloadBtn = $('downloadBtn');
+        const statusMsg = $('statusMsg');
+
+        // --------------------------------------------------------------
+        // FUNCTIONS
+        // --------------------------------------------------------------
+
+        function updateSentence() {
+            const s = sentences[idx];
+            sentenceLabel.textContent = `Sentence ${idx + 1} / ${sentences.length}`;
+            sentenceHanzi.textContent = s.hanzi;
+            sentencePinyin.textContent = s.pinyin;
+            sentenceCounter.textContent = `${idx + 1} / ${sentences.length}`;
+            clearAudio();
+        }
+
+        function prevSentence() {
+            if (idx > 0) { idx--; updateSentence(); if (model && speaker) loadAudio(); }
+        }
+
+        function nextSentence() {
+            if (idx < sentences.length - 1) { idx++; updateSentence(); if (model && speaker) loadAudio(); }
+        }
+
+        function selectModel(m) {
+            model = m;
+            // Highlight
+            document.querySelectorAll('#modelGroup .btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.model === m);
+            });
+            // Show speakers
+            speakerBox.classList.add('visible');
+            const config = modelConfig[m];
+            speakerButtons.innerHTML = '';
+            config.speakers.forEach(spk => {
+                const btn = document.createElement('button');
+                btn.className = 'speaker-btn';
+                btn.textContent = spk.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                btn.dataset.speaker = spk;
+                btn.onclick = () => selectSpeaker(spk);
+                speakerButtons.appendChild(btn);
+            });
+            speaker = null;
+            clearAudio();
+            statusMsg.textContent = `Selected ${config.label}. Choose a speaker.`;
+            statusMsg.className = 'status visible';
+            document.querySelectorAll('.speaker-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        function selectSpeaker(spk) {
+            speaker = spk;
+            document.querySelectorAll('.speaker-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.speaker === spk);
+            });
+            loadAudio();
+        }
+
+        function loadAudio() {
+            if (!model || !speaker) {
+                statusMsg.textContent = 'Please select a model and speaker.';
+                statusMsg.className = 'status visible';
+                return;
+            }
+
+            const config = modelConfig[model];
+            const num = String(idx + 1).padStart(2, '0');
+            const fname = `sentence_${num}.wav`;
+            let fullPath;
+
+            if (model === 'vits' || model === 'qwen') {
+                fullPath = `${config.basePath}${speaker}/${fname}`;
+            } else {
+                fullPath = `${config.basePath}${fname}`;
+            }
+
+            const webPath = fullPath.replace('/data/ravi/Cair/vits_44/', '');
+            const url = `http://${window.location.hostname}:8000/${webPath}`;
+
+            audioFname.textContent = fname;
+            audioPath.textContent = fullPath;
+            downloadBtn.href = url;
+            downloadBtn.download = fname;
+
+            audioPlayer.src = url;
+            audioPlayer.load();
+            audioBox.classList.add('visible');
+            statusMsg.textContent = `Loaded: ${fname}`;
+            statusMsg.className = 'status visible';
+
+            audioPlayer.onerror = function() {
+                statusMsg.textContent = `⚠️ File not found: ${fullPath}`;
+                statusMsg.className = 'status visible';
+            };
+        }
+
+        function clearAudio() {
+            audioPlayer.src = '';
+            audioBox.classList.remove('visible');
+            statusMsg.textContent = 'Select a model and speaker to load audio.';
+            statusMsg.className = 'status visible';
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') { prevSentence(); e.preventDefault(); }
+            if (e.key === 'ArrowRight') { nextSentence(); e.preventDefault(); }
+        });
+
+        // Init
+        updateSentence();
+    </script>
+
+</body>
+</html>
