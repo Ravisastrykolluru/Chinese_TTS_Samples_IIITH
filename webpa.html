@@ -455,6 +455,25 @@
             loadAudio();
         }
 
+        // --------------------------------------------------------------
+        // AUDIO LOADING — GitHub Pages version (static, relative paths)
+        // --------------------------------------------------------------
+        // On GitHub Pages there is no backend server, so audio files must
+        // exist as real static files inside the repo, in the SAME folder
+        // structure referenced below, sitting next to this index.html.
+        //
+        // Expected repo layout:
+        //   /index.html
+        //   /output_military_top10/<speaker>/sentence_01.wav      (vits)
+        //   /qwen_male_speakers_10/<speaker>/sentence_01.wav      (qwen)
+        //   /indextts_output/sentence_01.wav                      (indextts)
+        //   /melotts_output/sentence_01.wav                       (melotts)
+        //
+        // If your files live in a subfolder (e.g. /audio/), just change
+        // AUDIO_ROOT below to "audio" (no leading/trailing slash).
+        // --------------------------------------------------------------
+        const AUDIO_ROOT = ''; // e.g. 'audio' if files are under an /audio subfolder
+
         function loadAudio() {
             if (!model || !speaker) {
                 statusMsg.textContent = 'Please select a model and speaker.';
@@ -465,19 +484,22 @@
             const config = modelConfig[model];
             const num = String(idx + 1).padStart(2, '0');
             const fname = `sentence_${num}.wav`;
-            let fullPath;
+            let relPath;
 
             if (model === 'vits' || model === 'qwen') {
-                fullPath = `${config.basePath}${speaker}/${fname}`;
+                relPath = `${config.basePath}/${speaker}/${fname}`;
             } else {
-                fullPath = `${config.basePath}${fname}`;
+                relPath = `${config.basePath}/${fname}`;
             }
 
-            const webPath = fullPath.replace('/data/ravi/Cair/vits_44/', '');
-            const url = `http://${window.location.hostname}:8000/${webPath}`;
+            const fullDisplayPath = AUDIO_ROOT ? `${AUDIO_ROOT}/${relPath}` : relPath;
+            // Relative URL, resolved against wherever index.html is served from
+            // (works both at a domain root and under a GitHub Pages
+            // project subpath like username.github.io/repo/).
+            const url = `./${fullDisplayPath}`;
 
             audioFname.textContent = fname;
-            audioPath.textContent = fullPath;
+            audioPath.textContent = fullDisplayPath;
             downloadBtn.href = url;
             downloadBtn.download = fname;
 
@@ -488,7 +510,7 @@
             statusMsg.className = 'status visible';
 
             audioPlayer.onerror = function() {
-                statusMsg.textContent = `⚠️ File not found: ${fullPath}`;
+                statusMsg.textContent = `⚠️ File not found: ${fullDisplayPath}`;
                 statusMsg.className = 'status visible';
             };
         }
